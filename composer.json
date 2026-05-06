@@ -3,6 +3,35 @@
     "description": "Framework-agnostic PHP library for strict Uzbek mobile phone parsing, normalization, validation, formatting, masking, and prefix metadata.",
     "type": "library",
     "license": "MIT",
+    "keywords": [
+        "uzbekistan",
+        "uzbek",
+        "uz-phone",
+        "phone",
+        "phone-number",
+        "mobile",
+        "validation",
+        "normalization",
+        "formatter",
+        "masking",
+        "e164",
+        "998",
+        "beeline",
+        "ucell",
+        "uzmobile",
+        "mobiuz"
+    ],
+    "homepage": "https://github.com/khakimjanovich/uz-phone",
+    "authors": [
+        {
+            "name": "khakimjanovich",
+            "homepage": "https://github.com/khakimjanovich"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/khakimjanovich/uz-phone/issues",
+        "source": "https://github.com/khakimjanovich/uz-phone"
+    },
     "autoload": {
         "psr-4": {
             "Khakimjanovich\\UzPhone\\": "src/"

@@ -1,7 +1,32 @@
 # uz-phone
 
-Framework-agnostic PHP library for strict Uzbek mobile phone parsing,
-normalization, validation, formatting, masking, and prefix metadata.
+[![Latest Version](https://img.shields.io/packagist/v/khakimjanovich/uz-phone.svg?style=flat-square)](https://packagist.org/packages/khakimjanovich/uz-phone)
+[![PHP Version](https://img.shields.io/packagist/php-v/khakimjanovich/uz-phone.svg?style=flat-square)](https://packagist.org/packages/khakimjanovich/uz-phone)
+[![License](https://img.shields.io/packagist/l/khakimjanovich/uz-phone.svg?style=flat-square)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-Pest-cc3e44.svg?style=flat-square)](tests/UzPhoneTest.php)
+
+Strict Uzbek mobile phone parsing for PHP. Normalize messy input into clean
+E.164 numbers, validate real Uzbek mobile prefixes, format for display, mask
+for privacy, and read prefix metadata through typed enums.
+
+```php
+UzPhone::normalize('(90) 123-45-67'); // +998901234567
+UzPhone::format('901234567');         // +998 90 123 45 67
+UzPhone::mask('+998901234567');       // +998 90 *** ** 67
+```
+
+## Why
+
+Most apps only need one thing from Uzbek phone input: decide whether it is a
+valid mobile number and store it in one canonical format. `uz-phone` keeps that
+surface small, strict, and framework-agnostic.
+
+- Validates Uzbek mobile numbers only
+- Normalizes to E.164: `+998901234567`
+- Formats display output: `+998 90 123 45 67`
+- Masks private output: `+998 90 *** ** 67`
+- Returns prefix metadata with PHP backed enums
+- Ships with zero runtime dependencies
 
 ## Installation
 
@@ -9,34 +34,57 @@ normalization, validation, formatting, masking, and prefix metadata.
 composer require khakimjanovich/uz-phone
 ```
 
+Requires PHP 8.2 or newer.
+
 ## Usage
 
 ```php
+<?php
+
 use Khakimjanovich\UzPhone\UzPhone;
 
 UzPhone::isValid('(90) 123-45-67'); // true
 UzPhone::normalize('90 123 45 67'); // +998901234567
 UzPhone::format('901234567');       // +998 90 123 45 67
 UzPhone::mask('901234567');         // +998 90 *** ** 67
+```
+
+Invalid input returns `false` from `isValid()` and `null` from value-returning
+methods:
+
+```php
+UzPhone::isValid('+998711234567');  // false
+UzPhone::normalize('+997901234567'); // null
+UzPhone::metadata('90.123.45.67');   // null
+```
+
+## Prefix Metadata
+
+```php
+<?php
+
+use Khakimjanovich\UzPhone\Enum\MobileOperator;
+use Khakimjanovich\UzPhone\Enum\MobilePrefix;
+use Khakimjanovich\UzPhone\Enum\PhoneNumberType;
+use Khakimjanovich\UzPhone\UzPhone;
 
 $metadata = UzPhone::metadata('+998901234567');
+
+$metadata?->prefix === MobilePrefix::P90;          // true
+$metadata?->operator === MobileOperator::Beeline;  // true
+$metadata?->type === PhoneNumberType::Mobile;      // true
 
 echo $metadata?->prefix->value;   // 90
 echo $metadata?->operator->value; // BEELINE
 echo $metadata?->type->value;     // mobile
 ```
 
-`PrefixMetadata` uses backed enums for prefix, operator, and number type:
+Prefix metadata reflects original numbering allocation, not a guaranteed
+current operator after number portability.
 
-```php
-use Khakimjanovich\UzPhone\Enum\MobileOperator;
-use Khakimjanovich\UzPhone\Enum\MobilePrefix;
-use Khakimjanovich\UzPhone\Enum\PhoneNumberType;
-```
+## Supported Input
 
-## Supported Inputs
-
-Valid Uzbek mobile numbers may be provided as:
+All accepted input normalizes to `+998901234567`.
 
 ```text
 +998901234567
@@ -46,15 +94,10 @@ Valid Uzbek mobile numbers may be provided as:
 (90) 123-45-67
 ```
 
-All valid inputs normalize to E.164:
-
-```text
-+998901234567
-```
-
-## Invalid Inputs
-
-The library returns `false` or `null` for:
+The parser is intentionally strict. It accepts digits, a leading `+`, spaces,
+parentheses, and hyphens. It rejects unknown prefixes, landlines, wrong country
+codes, unsupported separators, letters, overlong numbers, and incomplete
+numbers.
 
 ```text
 +998711234567    landline prefix
@@ -69,11 +112,9 @@ The library returns `false` or `null` for:
 90\n1234567      line break separator
 ```
 
-## Mobile Prefixes
+## Uzbek Mobile Prefixes
 
-Prefix metadata is based on Uzbekistan's published numbering plan. It reflects
-the original allocation, not a guaranteed current operator after number
-portability.
+Source: [ITU Uzbekistan numbering plan update](https://www.itu.int/dms_pub/itu-t/oth/02/02/T02020000E10002PDFE.pdf).
 
 | Prefix | Operator |
 | --- | --- |
@@ -90,10 +131,22 @@ portability.
 | 98 | PERFECTUM MOBILE |
 | 99 | UZMOBILE |
 
-Source: [ITU Uzbekistan numbering plan update](https://www.itu.int/dms_pub/itu-t/oth/02/02/T02020000E10002PDFE.pdf).
+## API
+
+```php
+UzPhone::isValid(string $input): bool
+UzPhone::normalize(string $input): ?string
+UzPhone::format(string $input): ?string
+UzPhone::mask(string $input): ?string
+UzPhone::metadata(string $input): ?PrefixMetadata
+```
 
 ## Testing
 
 ```bash
 composer test
 ```
+
+## License
+
+MIT.
