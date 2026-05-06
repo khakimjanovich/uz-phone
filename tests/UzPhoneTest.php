@@ -19,9 +19,12 @@ dataset('valid inputs', [
     'national punctuated' => ['(90) 123-45-67'],
 ]);
 
-it('normalizes supported input shapes', function (string $input): void {
-    expect(UzPhone::isValid($input))->toBeTrue()
-        ->and(UzPhone::normalize($input))->toBe('+998901234567');
+it('parses supported input shapes', function (string $input): void {
+    $result = UzPhone::parse($input);
+
+    expect($result->isValid())->toBeTrue()
+        ->and($result->phoneNumber()?->e164)->toBe('+998901234567')
+        ->and($result->errors())->toBe([]);
 })->with('valid inputs');
 
 dataset('invalid inputs', [
@@ -38,11 +41,9 @@ dataset('invalid inputs', [
 ]);
 
 it('rejects invalid input', function (string $input): void {
-    expect(UzPhone::isValid($input))->toBeFalse()
-        ->and(UzPhone::normalize($input))->toBeNull()
+    expect(UzPhone::parse($input)->isValid())->toBeFalse()
         ->and(UzPhone::format($input))->toBeNull()
-        ->and(UzPhone::mask($input))->toBeNull()
-        ->and(UzPhone::metadata($input))->toBeNull();
+        ->and(UzPhone::mask($input))->toBeNull();
 })->with('invalid inputs');
 
 it('formats and masks valid numbers', function (): void {
@@ -69,7 +70,7 @@ it('returns enum metadata for supported mobile prefixes', function (
     MobilePrefix $prefix,
     MobileOperator $operator,
 ): void {
-    $metadata = UzPhone::metadata($prefix->value . '1234567');
+    $metadata = UzPhone::parse($prefix->value . '1234567')->phoneNumber()?->metadata();
 
     expect($metadata)->toBeInstanceOf(PrefixMetadata::class)
         ->and($metadata?->prefix)->toBe($prefix)

@@ -34,16 +34,6 @@ final class UzPhone
         return ParseResult::valid($phoneNumber);
     }
 
-    public static function isValid(string $input): bool
-    {
-        return self::parse($input)->isValid();
-    }
-
-    public static function normalize(string $input): ?string
-    {
-        return self::parse($input)->phoneNumber()?->e164;
-    }
-
     public static function format(string $input): ?string
     {
         return self::parse($input)->phoneNumber()?->formatted;
@@ -52,11 +42,6 @@ final class UzPhone
     public static function mask(string $input): ?string
     {
         return self::parse($input)->phoneNumber()?->masked;
-    }
-
-    public static function metadata(string $input): ?PrefixMetadata
-    {
-        return self::parse($input)->phoneNumber()?->metadata();
     }
 
     private static function formatNationalNumber(string $nationalNumber): string
