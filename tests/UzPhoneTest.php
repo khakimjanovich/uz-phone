@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Khakimjanovich\UzPhone\Enum\MobileOperator;
-use Khakimjanovich\UzPhone\Enum\MobilePrefix;
-use Khakimjanovich\UzPhone\Enum\PhoneNumberType;
+use Khakimjanovich\UzPhone\Enum\Prefix;
+use Khakimjanovich\UzPhone\Enum\PrefixType;
 use Khakimjanovich\UzPhone\Enum\ValidationError;
 use Khakimjanovich\UzPhone\ParseResult;
 use Khakimjanovich\UzPhone\PrefixMetadata;
@@ -14,6 +14,7 @@ use Khakimjanovich\UzPhone\UzPhone;
 dataset('valid inputs', [
     'e164 compact' => ['+998901234567'],
     'international compact' => ['998901234567'],
+    'international spaced country code' => ['+998 90 123 45 67'],
     'national compact' => ['901234567'],
     'national spaced' => ['90 123 45 67'],
     'national punctuated' => ['(90) 123-45-67'],
@@ -41,33 +42,26 @@ dataset('invalid inputs', [
 ]);
 
 it('rejects invalid input', function (string $input): void {
-    expect(UzPhone::parse($input)->isValid())->toBeFalse()
-        ->and(UzPhone::format($input))->toBeNull()
-        ->and(UzPhone::mask($input))->toBeNull();
+    expect(UzPhone::parse($input)->isValid())->toBeFalse();
 })->with('invalid inputs');
 
-it('formats and masks valid numbers', function (): void {
-    expect(UzPhone::format('901234567'))->toBe('+998 90 123 45 67')
-        ->and(UzPhone::mask('901234567'))->toBe('+998 90 *** ** 67');
-});
-
 dataset('prefix metadata', [
-    '33 HUMANS' => [MobilePrefix::P33, MobileOperator::Humans],
-    '50 UCELL' => [MobilePrefix::P50, MobileOperator::Ucell],
-    '77 UZMOBILE' => [MobilePrefix::P77, MobileOperator::Uzmobile],
-    '88 MOBIUZ' => [MobilePrefix::P88, MobileOperator::Mobiuz],
-    '90 BEELINE' => [MobilePrefix::P90, MobileOperator::Beeline],
-    '91 BEELINE' => [MobilePrefix::P91, MobileOperator::Beeline],
-    '93 UCELL' => [MobilePrefix::P93, MobileOperator::Ucell],
-    '94 UCELL' => [MobilePrefix::P94, MobileOperator::Ucell],
-    '95 UZMOBILE' => [MobilePrefix::P95, MobileOperator::Uzmobile],
-    '97 MOBIUZ' => [MobilePrefix::P97, MobileOperator::Mobiuz],
-    '98 PERFECTUM MOBILE' => [MobilePrefix::P98, MobileOperator::PerfectumMobile],
-    '99 UZMOBILE' => [MobilePrefix::P99, MobileOperator::Uzmobile],
+    '33 HUMANS' => [Prefix::P33, MobileOperator::Humans],
+    '50 UCELL' => [Prefix::P50, MobileOperator::Ucell],
+    '77 UZMOBILE' => [Prefix::P77, MobileOperator::Uzmobile],
+    '88 MOBIUZ' => [Prefix::P88, MobileOperator::Mobiuz],
+    '90 BEELINE' => [Prefix::P90, MobileOperator::Beeline],
+    '91 BEELINE' => [Prefix::P91, MobileOperator::Beeline],
+    '93 UCELL' => [Prefix::P93, MobileOperator::Ucell],
+    '94 UCELL' => [Prefix::P94, MobileOperator::Ucell],
+    '95 UZMOBILE' => [Prefix::P95, MobileOperator::Uzmobile],
+    '97 MOBIUZ' => [Prefix::P97, MobileOperator::Mobiuz],
+    '98 PERFECTUM MOBILE' => [Prefix::P98, MobileOperator::PerfectumMobile],
+    '99 UZMOBILE' => [Prefix::P99, MobileOperator::Uzmobile],
 ]);
 
 it('returns enum metadata for supported mobile prefixes', function (
-    MobilePrefix $prefix,
+    Prefix $prefix,
     MobileOperator $operator,
 ): void {
     $metadata = UzPhone::parse($prefix->value . '1234567')->phoneNumber()?->metadata();
@@ -75,7 +69,7 @@ it('returns enum metadata for supported mobile prefixes', function (
     expect($metadata)->toBeInstanceOf(PrefixMetadata::class)
         ->and($metadata?->prefix)->toBe($prefix)
         ->and($metadata?->operator)->toBe($operator)
-        ->and($metadata?->type)->toBe(PhoneNumberType::Mobile);
+        ->and($metadata?->type)->toBe(PrefixType::Mobile);
 })->with('prefix metadata');
 
 it('parses valid input into a phone number result', function (): void {
@@ -88,9 +82,9 @@ it('parses valid input into a phone number result', function (): void {
         ->and($phoneNumber)->toBeInstanceOf(PhoneNumber::class)
         ->and($phoneNumber?->e164)->toBe('+998901234567')
         ->and($phoneNumber?->national)->toBe('901234567')
-        ->and($phoneNumber?->prefix)->toBe(MobilePrefix::P90)
+        ->and($phoneNumber?->prefix)->toBe(Prefix::P90)
         ->and($phoneNumber?->operator)->toBe(MobileOperator::Beeline)
-        ->and($phoneNumber?->type)->toBe(PhoneNumberType::Mobile)
+        ->and($phoneNumber?->type)->toBe(PrefixType::Mobile)
         ->and($phoneNumber?->formatted)->toBe('+998 90 123 45 67')
         ->and($phoneNumber?->masked)->toBe('+998 90 *** ** 67');
 });

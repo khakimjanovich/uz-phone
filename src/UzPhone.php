@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Khakimjanovich\UzPhone;
 
-use Khakimjanovich\UzPhone\Enum\MobilePrefix;
-use Khakimjanovich\UzPhone\Enum\PhoneNumberType;
+use Brick\PhoneNumber\PhoneNumber as BrickPhoneNumber;
+use Brick\PhoneNumber\PhoneNumberFormat;
+use Brick\PhoneNumber\PhoneNumberParseErrorType;
+use Brick\PhoneNumber\PhoneNumberParseException;
+use Brick\PhoneNumber\PhoneNumberType as BrickPhoneNumberType;
+use Khakimjanovich\UzPhone\Enum\Prefix;
+use Khakimjanovich\UzPhone\Enum\PrefixType;
 use Khakimjanovich\UzPhone\Enum\ValidationError;
 
 final class UzPhone
@@ -14,46 +19,31 @@ final class UzPhone
 
     public static function parse(string $input): ParseResult
     {
-        $parsed = self::parseNationalNumber($input);
+        $parsed = self::parseBrickPhoneNumber($input);
 
         if ($parsed instanceof ValidationError) {
             return ParseResult::invalid($parsed);
         }
 
-        $prefix = MobilePrefix::from(substr($parsed, 0, 2));
+        $nationalNumber = $parsed->getNationalNumber();
+        $prefix = Prefix::from(substr($nationalNumber, 0, 2));
+        $operator = $prefix->operator();
+
+        if ($operator === null) {
+            return ParseResult::invalid(ValidationError::NotMobile);
+        }
+
         $phoneNumber = new PhoneNumber(
-            e164: '+' . self::COUNTRY_CODE . $parsed,
-            national: $parsed,
+            e164: $parsed->format(PhoneNumberFormat::E164),
+            national: $nationalNumber,
             prefix: $prefix,
-            operator: $prefix->operator(),
-            type: PhoneNumberType::Mobile,
-            formatted: self::formatNationalNumber($parsed),
-            masked: self::maskNationalNumber($parsed),
+            operator: $operator,
+            type: PrefixType::Mobile,
+            formatted: $parsed->format(PhoneNumberFormat::INTERNATIONAL),
+            masked: self::maskNationalNumber($nationalNumber),
         );
 
         return ParseResult::valid($phoneNumber);
-    }
-
-    public static function format(string $input): ?string
-    {
-        return self::parse($input)->phoneNumber()?->formatted;
-    }
-
-    public static function mask(string $input): ?string
-    {
-        return self::parse($input)->phoneNumber()?->masked;
-    }
-
-    private static function formatNationalNumber(string $nationalNumber): string
-    {
-        return sprintf(
-            '+%s %s %s %s %s',
-            self::COUNTRY_CODE,
-            substr($nationalNumber, 0, 2),
-            substr($nationalNumber, 2, 3),
-            substr($nationalNumber, 5, 2),
-            substr($nationalNumber, 7, 2),
-        );
     }
 
     private static function maskNationalNumber(string $nationalNumber): string
@@ -66,7 +56,7 @@ final class UzPhone
         );
     }
 
-    private static function parseNationalNumber(string $input): string|ValidationError
+    private static function parseBrickPhoneNumber(string $input): BrickPhoneNumber|ValidationError
     {
         $input = trim($input);
 
@@ -82,34 +72,40 @@ final class UzPhone
             return ValidationError::InvalidCharacters;
         }
 
-        $digits = preg_replace('/\D/', '', $input);
-
-        if ($digits === null) {
-            return ValidationError::Malformed;
+        try {
+            $phoneNumber = BrickPhoneNumber::parse($input, 'UZ');
+        } catch (PhoneNumberParseException $exception) {
+            return self::mapBrickParseException($exception);
         }
 
-        if (strlen($digits) === 12 && !str_starts_with($digits, self::COUNTRY_CODE)) {
-            return ValidationError::InvalidCountryCode;
-        }
+        $nationalNumber = $phoneNumber->getNationalNumber();
+        $prefix = substr($nationalNumber, 0, 2);
+        $prefixEnum = Prefix::tryFrom($prefix);
 
-        if (str_starts_with($digits, self::COUNTRY_CODE)) {
-            $digits = substr($digits, 3);
-        }
-
-        if (strlen($digits) !== 9) {
-            return ValidationError::InvalidLength;
-        }
-
-        $prefix = substr($digits, 0, 2);
-
-        if (in_array($prefix, ['61', '62', '65', '66', '67', '69', '70', '71', '72', '73', '74', '75', '76', '79'], true)) {
-            return ValidationError::NotMobile;
-        }
-
-        if (MobilePrefix::tryFrom($prefix) === null) {
+        if ($prefixEnum === null) {
             return ValidationError::UnknownPrefix;
         }
 
-        return $digits;
+        if ($phoneNumber->getNumberType() === BrickPhoneNumberType::FIXED_LINE || $prefixEnum->type() === PrefixType::FixedLine) {
+            return ValidationError::NotMobile;
+        }
+
+        if (!$phoneNumber->isValidNumber()) {
+            return ValidationError::InvalidLength;
+        }
+
+        return $phoneNumber;
     }
+
+    private static function mapBrickParseException(PhoneNumberParseException $exception): ValidationError
+    {
+        return match ($exception->errorType) {
+            PhoneNumberParseErrorType::INVALID_COUNTRY_CODE => ValidationError::InvalidCountryCode,
+            PhoneNumberParseErrorType::NOT_A_NUMBER => ValidationError::InvalidCharacters,
+            PhoneNumberParseErrorType::TOO_SHORT_AFTER_IDD,
+            PhoneNumberParseErrorType::TOO_SHORT_NSN,
+            PhoneNumberParseErrorType::TOO_LONG => ValidationError::InvalidLength,
+        };
+    }
+
 }

@@ -12,9 +12,9 @@ for privacy, and read prefix metadata through typed enums.
 ```php
 $result = UzPhone::parse('(90) 123-45-67');
 
-$result->phoneNumber()?->e164; // +998901234567
-UzPhone::format('901234567');  // +998 90 123 45 67
-UzPhone::mask('+998901234567'); // +998 90 *** ** 67
+$result->phoneNumber()?->e164;      // +998901234567
+$result->phoneNumber()?->formatted; // +998 90 123 45 67
+$result->phoneNumber()?->masked;    // +998 90 *** ** 67
 ```
 
 ## Why
@@ -28,7 +28,8 @@ surface small, strict, and framework-agnostic.
 - Formats display output: `+998 90 123 45 67`
 - Masks private output: `+998 90 *** ** 67`
 - Returns prefix metadata with PHP backed enums
-- Ships with zero runtime dependencies
+- Uses `brick/phonenumber` for phone-number parsing and formatting
+- Keeps Uzbek mobile validation and operator metadata in this package
 
 ## Installation
 
@@ -37,6 +38,19 @@ composer require khakimjanovich/uz-phone
 ```
 
 Requires PHP 8.2 or newer.
+
+## How It Works
+
+`uz-phone` uses [`brick/phonenumber`](https://github.com/brick/phonenumber) for
+the underlying phone-number parse and format step. On top of that, it applies
+strict Uzbekistan-only mobile rules from the ITU numbering plan:
+
+- country code must be `+998`
+- national number must be exactly 9 digits
+- prefix must be an Uzbek mobile allocation
+- fixed-line and unknown prefixes are rejected
+
+This keeps the public API small while avoiding a fully hand-rolled parser.
 
 ## Usage
 
@@ -62,9 +76,6 @@ $result = UzPhone::parse('+998711234567');
 $result->isValid();     // false
 $result->phoneNumber(); // null
 $result->errors();      // [ValidationError::NotMobile]
-
-UzPhone::format('+997901234567'); // null
-UzPhone::mask('90.123.45.67');    // null
 ```
 
 ## Prefix Metadata
@@ -73,15 +84,15 @@ UzPhone::mask('90.123.45.67');    // null
 <?php
 
 use Khakimjanovich\UzPhone\Enum\MobileOperator;
-use Khakimjanovich\UzPhone\Enum\MobilePrefix;
-use Khakimjanovich\UzPhone\Enum\PhoneNumberType;
+use Khakimjanovich\UzPhone\Enum\Prefix;
+use Khakimjanovich\UzPhone\Enum\PrefixType;
 use Khakimjanovich\UzPhone\UzPhone;
 
 $metadata = UzPhone::parse('+998901234567')->phoneNumber()?->metadata();
 
-$metadata?->prefix === MobilePrefix::P90;          // true
+$metadata?->prefix === Prefix::P90;                // true
 $metadata?->operator === MobileOperator::Beeline;  // true
-$metadata?->type === PhoneNumberType::Mobile;      // true
+$metadata?->type === PrefixType::Mobile;           // true
 
 echo $metadata?->prefix->value;   // 90
 echo $metadata?->operator->value; // BEELINE
@@ -89,7 +100,9 @@ echo $metadata?->type->value;     // mobile
 ```
 
 Prefix metadata reflects original numbering allocation, not a guaranteed
-current operator after number portability.
+current operator after number portability. Fixed-line prefixes are modeled in
+`Prefix`, but this package rejects them because it validates Uzbek mobile
+numbers only.
 
 ## Supported Input
 
@@ -144,8 +157,6 @@ Source: [ITU Uzbekistan numbering plan update](https://www.itu.int/dms_pub/itu-t
 
 ```php
 UzPhone::parse(string $input): ParseResult
-UzPhone::format(string $input): ?string
-UzPhone::mask(string $input): ?string
 ```
 
 `ParseResult` is the recommended API for forms and imports:
@@ -161,9 +172,9 @@ $result->errors(): array
 ```php
 $phoneNumber->e164;      // +998901234567
 $phoneNumber->national;  // 901234567
-$phoneNumber->prefix;    // MobilePrefix::P90
+$phoneNumber->prefix;    // Prefix::P90
 $phoneNumber->operator;  // MobileOperator::Beeline
-$phoneNumber->type;      // PhoneNumberType::Mobile
+$phoneNumber->type;      // PrefixType::Mobile
 $phoneNumber->formatted; // +998 90 123 45 67
 $phoneNumber->masked;    // +998 90 *** ** 67
 ```
