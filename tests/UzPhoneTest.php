@@ -5,7 +5,10 @@ declare(strict_types=1);
 use Khakimjanovich\UzPhone\Enum\MobileOperator;
 use Khakimjanovich\UzPhone\Enum\MobilePrefix;
 use Khakimjanovich\UzPhone\Enum\PhoneNumberType;
+use Khakimjanovich\UzPhone\Enum\ValidationError;
+use Khakimjanovich\UzPhone\ParseResult;
 use Khakimjanovich\UzPhone\PrefixMetadata;
+use Khakimjanovich\UzPhone\PhoneNumber;
 use Khakimjanovich\UzPhone\UzPhone;
 
 dataset('valid inputs', [
@@ -73,3 +76,38 @@ it('returns enum metadata for supported mobile prefixes', function (
         ->and($metadata?->operator)->toBe($operator)
         ->and($metadata?->type)->toBe(PhoneNumberType::Mobile);
 })->with('prefix metadata');
+
+it('parses valid input into a phone number result', function (): void {
+    $result = UzPhone::parse('(90) 123-45-67');
+    $phoneNumber = $result->phoneNumber();
+
+    expect($result)->toBeInstanceOf(ParseResult::class)
+        ->and($result->isValid())->toBeTrue()
+        ->and($result->errors())->toBe([])
+        ->and($phoneNumber)->toBeInstanceOf(PhoneNumber::class)
+        ->and($phoneNumber?->e164)->toBe('+998901234567')
+        ->and($phoneNumber?->national)->toBe('901234567')
+        ->and($phoneNumber?->prefix)->toBe(MobilePrefix::P90)
+        ->and($phoneNumber?->operator)->toBe(MobileOperator::Beeline)
+        ->and($phoneNumber?->type)->toBe(PhoneNumberType::Mobile)
+        ->and($phoneNumber?->formatted)->toBe('+998 90 123 45 67')
+        ->and($phoneNumber?->masked)->toBe('+998 90 *** ** 67');
+});
+
+dataset('parse errors', [
+    'empty' => ['', [ValidationError::Empty]],
+    'invalid characters' => ['+99890abc4567', [ValidationError::InvalidCharacters]],
+    'malformed plus' => ['998+901234567', [ValidationError::Malformed]],
+    'wrong country code' => ['+997901234567', [ValidationError::InvalidCountryCode]],
+    'too short' => ['+99890123456', [ValidationError::InvalidLength]],
+    'unknown prefix' => ['+998321234567', [ValidationError::UnknownPrefix]],
+    'landline prefix' => ['+998711234567', [ValidationError::NotMobile]],
+]);
+
+it('parses invalid input into validation errors', function (string $input, array $errors): void {
+    $result = UzPhone::parse($input);
+
+    expect($result->isValid())->toBeFalse()
+        ->and($result->phoneNumber())->toBeNull()
+        ->and($result->errors())->toBe($errors);
+})->with('parse errors');

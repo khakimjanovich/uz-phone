@@ -43,17 +43,25 @@ Requires PHP 8.2 or newer.
 
 use Khakimjanovich\UzPhone\UzPhone;
 
-UzPhone::isValid('(90) 123-45-67'); // true
-UzPhone::normalize('90 123 45 67'); // +998901234567
-UzPhone::format('901234567');       // +998 90 123 45 67
-UzPhone::mask('901234567');         // +998 90 *** ** 67
+$result = UzPhone::parse('(90) 123-45-67');
+
+$result->isValid();              // true
+$result->errors();               // []
+$result->phoneNumber()?->e164;   // +998901234567
+$result->phoneNumber()?->masked; // +998 90 *** ** 67
 ```
 
 Invalid input returns `false` from `isValid()` and `null` from value-returning
 methods:
 
 ```php
-UzPhone::isValid('+998711234567');  // false
+$result = UzPhone::parse('+998711234567');
+
+$result->isValid();     // false
+$result->phoneNumber(); // null
+$result->errors();      // [ValidationError::NotMobile]
+
+UzPhone::isValid('+998711234567');   // false
 UzPhone::normalize('+997901234567'); // null
 UzPhone::metadata('90.123.45.67');   // null
 ```
@@ -134,11 +142,44 @@ Source: [ITU Uzbekistan numbering plan update](https://www.itu.int/dms_pub/itu-t
 ## API
 
 ```php
+UzPhone::parse(string $input): ParseResult
 UzPhone::isValid(string $input): bool
 UzPhone::normalize(string $input): ?string
 UzPhone::format(string $input): ?string
 UzPhone::mask(string $input): ?string
 UzPhone::metadata(string $input): ?PrefixMetadata
+```
+
+`ParseResult` is the recommended API for forms and imports:
+
+```php
+$result->isValid(): bool
+$result->phoneNumber(): ?PhoneNumber
+$result->errors(): array
+```
+
+`PhoneNumber` exposes normalized values and enum metadata:
+
+```php
+$phoneNumber->e164;      // +998901234567
+$phoneNumber->national;  // 901234567
+$phoneNumber->prefix;    // MobilePrefix::P90
+$phoneNumber->operator;  // MobileOperator::Beeline
+$phoneNumber->type;      // PhoneNumberType::Mobile
+$phoneNumber->formatted; // +998 90 123 45 67
+$phoneNumber->masked;    // +998 90 *** ** 67
+```
+
+Validation errors are backed enum cases:
+
+```php
+ValidationError::Empty
+ValidationError::InvalidCharacters
+ValidationError::Malformed
+ValidationError::InvalidCountryCode
+ValidationError::InvalidLength
+ValidationError::UnknownPrefix
+ValidationError::NotMobile
 ```
 
 ## Testing
