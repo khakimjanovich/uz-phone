@@ -3,33 +3,35 @@
 [![Latest Version](https://img.shields.io/packagist/v/khakimjanovich/uz-phone.svg?style=flat-square)](https://packagist.org/packages/khakimjanovich/uz-phone)
 [![PHP Version](https://img.shields.io/packagist/php-v/khakimjanovich/uz-phone.svg?style=flat-square)](https://packagist.org/packages/khakimjanovich/uz-phone)
 [![License](https://img.shields.io/packagist/l/khakimjanovich/uz-phone.svg?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-Pest-cc3e44.svg?style=flat-square)](tests/UzPhoneTest.php)
+[![Tests](https://img.shields.io/badge/tests-Pest-cc3e44.svg?style=flat-square)](tests/UzPhoneNumberTest.php)
 
-Strict Uzbek mobile phone parsing for PHP. Normalize messy input into clean
-E.164 numbers, validate real Uzbek mobile prefixes, format for display, mask
-for privacy, and read prefix metadata through typed enums.
+Strict Uzbek phone parsing for PHP. `UzPhoneNumber` wraps `brick/phonenumber`
+internally, adds Uzbekistan prefix data, and exposes a small Brick-style
+object API without leaking Brick classes.
 
 ```php
-$result = UzPhone::parse('(90) 123-45-67');
+use Khakimjanovich\UzPhone\Enum\Format;
+use Khakimjanovich\UzPhone\UzPhoneNumber;
 
-$result->phoneNumber()?->e164;      // +998901234567
-$result->phoneNumber()?->formatted; // +998 90 123 45 67
-$result->phoneNumber()?->masked;    // +998 90 *** ** 67
+$phone_number = UzPhoneNumber::parse('(90) 123-45-67');
+
+echo $phone_number;                         // +998901234567
+echo $phone_number->format(Format::MASKED); // +998 90 *** ** 67
 ```
 
 ## Why
 
-Most apps only need one thing from Uzbek phone input: decide whether it is a
-valid mobile number and store it in one canonical format. `uz-phone` keeps that
-surface small, strict, and framework-agnostic.
+Most apps only need one thing from Uzbek phone input: parse it into a canonical
+object, identify its prefix type, and then decide what their own domain should
+accept. `uz-phone` keeps that surface small, strict, and framework-agnostic.
 
-- Validates Uzbek mobile numbers only
+- Parses Uzbek phone numbers
 - Normalizes to E.164: `+998901234567`
 - Formats display output: `+998 90 123 45 67`
 - Masks private output: `+998 90 *** ** 67`
-- Returns prefix metadata with PHP backed enums
+- Returns prefix data with PHP backed enums
 - Uses `brick/phonenumber` for phone-number parsing and formatting
-- Keeps Uzbek mobile validation and operator metadata in this package
+- Keeps Uzbek prefix type and operator data in this package
 
 ## Installation
 
@@ -39,70 +41,52 @@ composer require khakimjanovich/uz-phone
 
 Requires PHP 8.2 or newer.
 
-## How It Works
-
-`uz-phone` uses [`brick/phonenumber`](https://github.com/brick/phonenumber) for
-the underlying phone-number parse and format step. On top of that, it applies
-strict Uzbekistan-only mobile rules from the ITU numbering plan:
-
-- country code must be `+998`
-- national number must be exactly 9 digits
-- prefix must be an Uzbek mobile allocation
-- fixed-line and unknown prefixes are rejected
-
-This keeps the public API small while avoiding a fully hand-rolled parser.
-
 ## Usage
 
 ```php
 <?php
 
-use Khakimjanovich\UzPhone\UzPhone;
+use Khakimjanovich\UzPhone\Enum\Format;
+use Khakimjanovich\UzPhone\ParseException;
+use Khakimjanovich\UzPhone\UzPhoneNumber;
 
-$result = UzPhone::parse('(90) 123-45-67');
+try {
+    $phone_number = UzPhoneNumber::parse('90 123 45 67');
+} catch (ParseException $exception) {
+    echo $exception->error_type->value;
+}
 
-$result->isValid();              // true
-$result->errors();               // []
-$result->phoneNumber()?->e164;   // +998901234567
-$result->phoneNumber()?->masked; // +998 90 *** ** 67
+$phone_number->getCountryCode();    // 998
+$phone_number->getNationalNumber(); // 901234567
+$phone_number->format(Format::E164);          // +998901234567
+$phone_number->format(Format::INTERNATIONAL); // +998 90 123 45 67
+$phone_number->format(Format::NATIONAL);      // 90 123 45 67
+$phone_number->format(Format::MASKED);        // +998 90 *** ** 67
 ```
 
-Invalid input returns `false` from `isValid()` and `null` from value-returning
-helpers:
-
-```php
-$result = UzPhone::parse('+998711234567');
-
-$result->isValid();     // false
-$result->phoneNumber(); // null
-$result->errors();      // [ValidationError::NotMobile]
-```
-
-## Prefix Metadata
+## Prefix Data
 
 ```php
 <?php
 
-use Khakimjanovich\UzPhone\Enum\MobileOperator;
+use Khakimjanovich\UzPhone\Enum\Operator;
 use Khakimjanovich\UzPhone\Enum\Prefix;
 use Khakimjanovich\UzPhone\Enum\PrefixType;
-use Khakimjanovich\UzPhone\UzPhone;
+use Khakimjanovich\UzPhone\UzPhoneNumber;
 
-$metadata = UzPhone::parse('+998901234567')->phoneNumber()?->metadata();
+$phone_number = UzPhoneNumber::parse('+998901234567');
 
-$metadata?->prefix === Prefix::P90;                // true
-$metadata?->operator === MobileOperator::Beeline;  // true
-$metadata?->type === PrefixType::Mobile;           // true
-
-echo $metadata?->prefix->value;   // 90
-echo $metadata?->operator->value; // BEELINE
-echo $metadata?->type->value;     // mobile
+$phone_number->getPrefix() === Prefix::P90;               // true
+$phone_number->getOperator() === Operator::BEELINE;        // true
+$phone_number->getPrefixType() === PrefixType::MOBILE_GSM; // true
+$phone_number->getOperator()?->value;                      // beeline
+$phone_number->getOperator()?->label();                     // BEELINE
 ```
 
-Prefix metadata reflects original numbering allocation, not a guaranteed
-current operator after number portability. Fixed-line prefixes are modeled in
-`Prefix`, but this package rejects them because it validates Uzbek mobile
-numbers only.
+Prefix data reflects original numbering allocation, not a guaranteed
+current operator after number portability. Geographic PSTN prefixes return
+`null` from `getOperator()` because the ITU table names the region, not a
+specific operator.
 
 ## Supported Input
 
@@ -111,84 +95,81 @@ All accepted input normalizes to `+998901234567`.
 ```text
 +998901234567
 998901234567
++998 90 123 45 67
 901234567
 90 123 45 67
 (90) 123-45-67
 ```
 
 The parser is intentionally strict. It accepts digits, a leading `+`, spaces,
-parentheses, and hyphens. It rejects unknown prefixes, landlines, wrong country
-codes, unsupported separators, letters, overlong numbers, and incomplete
-numbers.
+parentheses, and hyphens. It rejects unknown prefixes, wrong country codes,
+unsupported separators, letters, overlong numbers, and incomplete numbers.
 
-```text
-+998711234567    landline prefix
-+998321234567    unknown mobile prefix
-+99890123456     too short
-+9989012345678   too long
-+997901234567    wrong country code
-+99890abc4567    alphabetic input
-+998998901234567 double country code
-998+901234567    plus sign after first character
-90.123.45.67     unsupported separator
-90\n1234567      line break separator
-```
-
-## Uzbek Mobile Prefixes
+## Uzbek Prefixes
 
 Source: [ITU Uzbekistan numbering plan update](https://www.itu.int/dms_pub/itu-t/oth/02/02/T02020000E10002PDFE.pdf).
 
-| Prefix | Operator |
-| --- | --- |
-| 33 | HUMANS |
-| 50 | UCELL |
-| 77 | UZMOBILE |
-| 88 | MOBIUZ |
-| 90 | BEELINE |
-| 91 | BEELINE |
-| 93 | UCELL |
-| 94 | UCELL |
-| 95 | UZMOBILE |
-| 97 | MOBIUZ |
-| 98 | PERFECTUM MOBILE |
-| 99 | UZMOBILE |
+| Prefix | Type | Operator |
+| --- | --- | --- |
+| 33 | `MOBILE_GSM` | `HUMANS` |
+| 50 | `MOBILE_GSM` | `UCELL` |
+| 55 | `SIP` | `UZTELECOM` |
+| 61 | `GEOGRAPHIC_PSTN` |  |
+| 62 | `GEOGRAPHIC_PSTN` |  |
+| 65 | `GEOGRAPHIC_PSTN` |  |
+| 66 | `GEOGRAPHIC_PSTN` |  |
+| 67 | `GEOGRAPHIC_PSTN` |  |
+| 69 | `GEOGRAPHIC_PSTN` |  |
+| 70 | `GEOGRAPHIC_PSTN` |  |
+| 71 | `GEOGRAPHIC_PSTN` |  |
+| 72 | `GEOGRAPHIC_PSTN` |  |
+| 73 | `GEOGRAPHIC_PSTN` |  |
+| 74 | `GEOGRAPHIC_PSTN` |  |
+| 75 | `GEOGRAPHIC_PSTN` |  |
+| 76 | `GEOGRAPHIC_PSTN` |  |
+| 77 | `MOBILE_GSM` | `UZMOBILE` |
+| 78 | `FIXED_NETWORK_SERVICE_PROVIDER` | `OTHER_FIXED_NETWORK_PROVIDERS` |
+| 79 | `GEOGRAPHIC_PSTN` |  |
+| 88 | `MOBILE_GSM` | `MOBIUZ` |
+| 90 | `MOBILE_GSM` | `BEELINE` |
+| 91 | `MOBILE_GSM` | `BEELINE` |
+| 93 | `MOBILE_GSM` | `UCELL` |
+| 94 | `MOBILE_GSM` | `UCELL` |
+| 95 | `MOBILE_CDMA_GSM` | `UZMOBILE` |
+| 97 | `MOBILE_GSM` | `MOBIUZ` |
+| 98 | `MOBILE_CDMA` | `PERFECTUM_MOBILE` |
+| 99 | `MOBILE_GSM` | `UZMOBILE` |
 
 ## API
 
 ```php
-UzPhone::parse(string $input): ParseResult
+UzPhoneNumber::parse(string $phone_number): UzPhoneNumber
 ```
 
-`ParseResult` is the recommended API for forms and imports:
+`parse()` throws `ParseException` when the input is not a valid
+Uzbek phone number. The exception exposes `ParseErrorType` through
+`$exception->error_type`.
+
+`UzPhoneNumber` methods:
 
 ```php
-$result->isValid(): bool
-$result->phoneNumber(): ?PhoneNumber
-$result->errors(): array
+$phone_number->getCountryCode(): string
+$phone_number->getNationalNumber(): string
+$phone_number->getPrefix(): Prefix
+$phone_number->getOperator(): ?Operator
+$phone_number->getPrefixType(): PrefixType
+$phone_number->format(Format $format): string
+$phone_number->isEqualTo(UzPhoneNumber $phone_number): bool
 ```
 
-`PhoneNumber` exposes normalized values and enum metadata:
+Parse error types:
 
 ```php
-$phoneNumber->e164;      // +998901234567
-$phoneNumber->national;  // 901234567
-$phoneNumber->prefix;    // Prefix::P90
-$phoneNumber->operator;  // MobileOperator::Beeline
-$phoneNumber->type;      // PrefixType::Mobile
-$phoneNumber->formatted; // +998 90 123 45 67
-$phoneNumber->masked;    // +998 90 *** ** 67
-```
-
-Validation errors are backed enum cases:
-
-```php
-ValidationError::Empty
-ValidationError::InvalidCharacters
-ValidationError::Malformed
-ValidationError::InvalidCountryCode
-ValidationError::InvalidLength
-ValidationError::UnknownPrefix
-ValidationError::NotMobile
+ParseErrorType::EMPTY
+ParseErrorType::INVALID_CHARACTERS
+ParseErrorType::INVALID_COUNTRY_CODE
+ParseErrorType::INVALID_LENGTH
+ParseErrorType::UNKNOWN_PREFIX
 ```
 
 ## Testing

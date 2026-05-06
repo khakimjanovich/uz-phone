@@ -8,6 +8,7 @@ enum Prefix: string
 {
     case P33 = '33';
     case P50 = '50';
+    case P55 = '55';
     case P61 = '61';
     case P62 = '62';
     case P65 = '65';
@@ -22,6 +23,7 @@ enum Prefix: string
     case P75 = '75';
     case P76 = '76';
     case P77 = '77';
+    case P78 = '78';
     case P79 = '79';
     case P88 = '88';
     case P90 = '90';
@@ -44,10 +46,12 @@ enum Prefix: string
             self::P91,
             self::P93,
             self::P94,
-            self::P95,
             self::P97,
-            self::P98,
-            self::P99 => PrefixType::Mobile,
+            self::P99 => PrefixType::MOBILE_GSM,
+            self::P95 => PrefixType::MOBILE_CDMA_GSM,
+            self::P98 => PrefixType::MOBILE_CDMA,
+            self::P55 => PrefixType::SIP,
+            self::P78 => PrefixType::FIXED_NETWORK_SERVICE_PROVIDER,
             self::P61,
             self::P62,
             self::P65,
@@ -61,19 +65,21 @@ enum Prefix: string
             self::P74,
             self::P75,
             self::P76,
-            self::P79 => PrefixType::FixedLine,
+            self::P79 => PrefixType::GEOGRAPHIC_PSTN,
         };
     }
 
-    public function operator(): ?MobileOperator
+    public function operator(): ?Operator
     {
         return match ($this) {
-            self::P33 => MobileOperator::Humans,
-            self::P50, self::P93, self::P94 => MobileOperator::Ucell,
-            self::P77, self::P95, self::P99 => MobileOperator::Uzmobile,
-            self::P88, self::P97 => MobileOperator::Mobiuz,
-            self::P90, self::P91 => MobileOperator::Beeline,
-            self::P98 => MobileOperator::PerfectumMobile,
+            self::P33 => Operator::HUMANS,
+            self::P50, self::P93, self::P94 => Operator::UCELL,
+            self::P55 => Operator::UZTELECOM,
+            self::P77, self::P95, self::P99 => Operator::UZMOBILE,
+            self::P78 => Operator::OTHER_FIXED_NETWORK_PROVIDERS,
+            self::P88, self::P97 => Operator::MOBIUZ,
+            self::P90, self::P91 => Operator::BEELINE,
+            self::P98 => Operator::PERFECTUM_MOBILE,
             default => null,
         };
     }
