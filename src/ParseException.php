@@ -22,15 +22,18 @@ final class ParseException extends Exception
 
     public static function mapBrickParseException(PhoneNumberParseException $exception): ParseException
     {
-        $error_type = match ($exception->errorType) {
-            PhoneNumberParseErrorType::INVALID_COUNTRY_CODE => ParseErrorType::INVALID_COUNTRY_CODE,
-            PhoneNumberParseErrorType::NOT_A_NUMBER => ParseErrorType::INVALID_CHARACTERS,
-            PhoneNumberParseErrorType::TOO_SHORT_AFTER_IDD,
-            PhoneNumberParseErrorType::TOO_SHORT_NSN,
-            PhoneNumberParseErrorType::TOO_LONG => ParseErrorType::INVALID_LENGTH,
+        return new self(self::mapBrickParseErrorType($exception->errorType->value));
+    }
+
+    private static function mapBrickParseErrorType(int $brick_error_type): ParseErrorType
+    {
+        return match ($brick_error_type) {
+            PhoneNumberParseErrorType::INVALID_COUNTRY_CODE->value => ParseErrorType::INVALID_COUNTRY_CODE,
+            PhoneNumberParseErrorType::NOT_A_NUMBER->value => ParseErrorType::INVALID_CHARACTERS,
+            PhoneNumberParseErrorType::TOO_SHORT_AFTER_IDD->value,
+            PhoneNumberParseErrorType::TOO_SHORT_NSN->value,
+            PhoneNumberParseErrorType::TOO_LONG->value => ParseErrorType::INVALID_LENGTH,
             default => ParseErrorType::UNHANDLED_BRICK_ERROR,
         };
-
-        return new self($error_type);
     }
 }

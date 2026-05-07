@@ -3,6 +3,7 @@
 [![Latest Version](https://img.shields.io/packagist/v/khakimjanovich/uz-phone.svg?style=flat-square)](https://packagist.org/packages/khakimjanovich/uz-phone)
 [![PHP Version](https://img.shields.io/packagist/php-v/khakimjanovich/uz-phone.svg?style=flat-square)](https://packagist.org/packages/khakimjanovich/uz-phone)
 [![License](https://img.shields.io/packagist/l/khakimjanovich/uz-phone.svg?style=flat-square)](LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/khakimjanovich/uz-phone/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/khakimjanovich/uz-phone/actions/workflows/tests.yml)
 [![Tests](https://img.shields.io/badge/tests-Pest-cc3e44.svg?style=flat-square)](tests/UzPhoneNumberTest.php)
 
 Strict Uzbek phone parsing for PHP. `UzPhoneNumber` wraps `brick/phonenumber`

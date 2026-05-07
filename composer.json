@@ -47,9 +47,14 @@
         "brick/phonenumber": "^0.8"
     },
     "require-dev": {
-        "pestphp/pest": "^3.0"
+        "pestphp/pest": "^3.0",
+        "phpstan/phpstan": "^2.1",
+        "laravel/pint": "^1.21"
     },
     "scripts": {
+        "analyse": "phpstan analyse",
+        "format": "pint",
+        "format:test": "pint --test",
         "test": "pest"
     },
     "minimum-stability": "stable",
