@@ -13,6 +13,7 @@ use Khakimjanovich\UzPhone\Enum\Operator;
 use Khakimjanovich\UzPhone\Enum\ParseErrorType;
 use Khakimjanovich\UzPhone\Enum\Prefix;
 use Khakimjanovich\UzPhone\Enum\PrefixType;
+use Khakimjanovich\UzPhone\Enum\Region;
 use Stringable;
 
 /**
@@ -110,6 +111,13 @@ final readonly class UzPhoneNumber implements Stringable, JsonSerializable
     public function getPrefixType(): PrefixType
     {
         return $this->prefix->type();
+    }
+
+    public function getAllocationRegion(): ?Region
+    {
+        $national_number = $this->getNationalNumber();
+
+        return $this->prefix->allocationRegion(substr($national_number, 2, 3));
     }
 
     public function isEqualTo(UzPhoneNumber $phone_number): bool

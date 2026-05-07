@@ -73,21 +73,24 @@ $phone_number->format(Format::MASKED);        // +998 90 *** ** 67
 use Khakimjanovich\UzPhone\Enum\Operator;
 use Khakimjanovich\UzPhone\Enum\Prefix;
 use Khakimjanovich\UzPhone\Enum\PrefixType;
+use Khakimjanovich\UzPhone\Enum\Region;
 use Khakimjanovich\UzPhone\UzPhoneNumber;
 
 $phone_number = UzPhoneNumber::parse('+998901234567');
 
-$phone_number->getPrefix() === Prefix::P90;               // true
-$phone_number->getOperator() === Operator::BEELINE;        // true
-$phone_number->getPrefixType() === PrefixType::MOBILE_GSM; // true
-$phone_number->getOperator()?->value;                      // beeline
-$phone_number->getOperator()?->label();                     // BEELINE
+$phone_number->getPrefix() === Prefix::P90;                      // true
+$phone_number->getOperator() === Operator::BEELINE_UNITEL;        // true
+$phone_number->getPrefixType() === PrefixType::MOBILE_GSM;        // true
+$phone_number->getOperator()?->value;                             // beeline_unitel
+$phone_number->getOperator()?->label();                            // Beeline (Unitel)
+$phone_number->getAllocationRegion() === Region::TASHKENT;        // true
+$phone_number->getAllocationRegion()?->label();                    // Tashkent
 ```
 
 Prefix data reflects original numbering allocation, not a guaranteed
-current operator after number portability. Geographic PSTN prefixes return
-`null` from `getOperator()` because the ITU table names the region, not a
-specific operator.
+current operator or location after number portability. Geographic PSTN prefixes
+return `null` from `getOperator()` because the ITU table names the region, not
+a specific operator.
 
 ## Supported Input
 
@@ -112,8 +115,10 @@ Source: [ITU Uzbekistan numbering plan update](https://www.itu.int/dms_pub/itu-t
 
 | Prefix | Type | Operator |
 | --- | --- | --- |
+| 20 | `MOBILE_GSM` | `OQ_BEELINE` |
 | 33 | `MOBILE_GSM` | `HUMANS` |
-| 50 | `MOBILE_GSM` | `UCELL` |
+| 36 | `FIXED_NETWORK_SERVICE_PROVIDER` | `BUZTON` |
+| 50 | `MOBILE_GSM` | `UCELL_COSCOM` |
 | 55 | `SIP` | `UZTELECOM` |
 | 61 | `GEOGRAPHIC_PSTN` |  |
 | 62 | `GEOGRAPHIC_PSTN` |  |
@@ -128,18 +133,21 @@ Source: [ITU Uzbekistan numbering plan update](https://www.itu.int/dms_pub/itu-t
 | 74 | `GEOGRAPHIC_PSTN` |  |
 | 75 | `GEOGRAPHIC_PSTN` |  |
 | 76 | `GEOGRAPHIC_PSTN` |  |
-| 77 | `MOBILE_GSM` | `UZMOBILE` |
-| 78 | `FIXED_NETWORK_SERVICE_PROVIDER` | `OTHER_FIXED_NETWORK_PROVIDERS` |
+| 77 | `MOBILE_GSM` | `UZMOBILE_GSM` |
+| 78 | `FIXED_NETWORK_SERVICE_PROVIDER` |  |
 | 79 | `GEOGRAPHIC_PSTN` |  |
-| 88 | `MOBILE_GSM` | `MOBIUZ` |
-| 90 | `MOBILE_GSM` | `BEELINE` |
-| 91 | `MOBILE_GSM` | `BEELINE` |
-| 93 | `MOBILE_GSM` | `UCELL` |
-| 94 | `MOBILE_GSM` | `UCELL` |
-| 95 | `MOBILE_CDMA_GSM` | `UZMOBILE` |
-| 97 | `MOBILE_GSM` | `MOBIUZ` |
+| 80 | `MOBILE_GSM` | `PERFECTUM_MOBILE` |
+| 87 | `MOBILE_GSM` | `MOBIUZ_UMS` |
+| 88 | `MOBILE_GSM` | `MOBIUZ_UMS` |
+| 90 | `MOBILE_GSM` | `BEELINE_UNITEL` |
+| 91 | `MOBILE_GSM` | `BEELINE_UNITEL` |
+| 92 | `MOBILE_GSM` | `BEELINE_UNITEL` |
+| 93 | `MOBILE_GSM` | `UCELL_COSCOM` |
+| 94 | `MOBILE_GSM` | `UCELL_COSCOM` |
+| 95 | `MOBILE_CDMA_GSM` | `UZMOBILE_CDMA` |
+| 97 | `MOBILE_GSM` | `MOBIUZ_UMS` |
 | 98 | `MOBILE_CDMA` | `PERFECTUM_MOBILE` |
-| 99 | `MOBILE_GSM` | `UZMOBILE` |
+| 99 | `MOBILE_GSM` |  |
 
 ## API
 
@@ -159,6 +167,7 @@ $phone_number->getNationalNumber(): string
 $phone_number->getPrefix(): Prefix
 $phone_number->getOperator(): ?Operator
 $phone_number->getPrefixType(): PrefixType
+$phone_number->getAllocationRegion(): ?Region
 $phone_number->format(Format $format): string
 $phone_number->isEqualTo(UzPhoneNumber $phone_number): bool
 ```
