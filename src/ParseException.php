@@ -28,6 +28,7 @@ final class ParseException extends Exception
             PhoneNumberParseErrorType::TOO_SHORT_AFTER_IDD,
             PhoneNumberParseErrorType::TOO_SHORT_NSN,
             PhoneNumberParseErrorType::TOO_LONG => ParseErrorType::INVALID_LENGTH,
+            default => ParseErrorType::UNHANDLED_BRICK_ERROR,
         };
 
         return new self($error_type);

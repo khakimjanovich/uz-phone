@@ -170,6 +170,7 @@ ParseErrorType::INVALID_CHARACTERS
 ParseErrorType::INVALID_COUNTRY_CODE
 ParseErrorType::INVALID_LENGTH
 ParseErrorType::UNKNOWN_PREFIX
+ParseErrorType::UNHANDLED_BRICK_ERROR
 ```
 
 ## Testing
