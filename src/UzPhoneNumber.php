@@ -149,12 +149,18 @@ final readonly class UzPhoneNumber implements Stringable, JsonSerializable
     private function formatMasked(): string
     {
         $national_number = $this->getNationalNumber();
+        $prefix = substr($national_number, 0, 2);
+        $last_digits = substr($national_number, -2);
+
+        if (strlen($prefix) !== 2 || strlen($last_digits) !== 2) {
+            throw new ParseException(ParseErrorType::INVALID_LENGTH);
+        }
 
         return sprintf(
             '+%s %s *** ** %s',
-            '998',
-            substr($national_number, 0, 2),
-            substr($national_number, 7, 2),
+            $this->getCountryCode(),
+            $prefix,
+            $last_digits,
         );
     }
 }
