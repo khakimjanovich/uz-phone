@@ -132,6 +132,7 @@ dataset('parse errors', [
     'plus sign after first character' => ['998+901234567', ParseErrorType::INVALID_CHARACTERS],
     'wrong country code' => ['+997901234567', ParseErrorType::INVALID_COUNTRY_CODE],
     'too short' => ['+99890123456', ParseErrorType::INVALID_LENGTH],
+    'too short unknown prefix' => ['+99832123456', ParseErrorType::INVALID_LENGTH],
     'too long' => ['+9989012345678', ParseErrorType::INVALID_LENGTH],
     'unknown prefix' => ['+998321234567', ParseErrorType::UNKNOWN_PREFIX],
     'unsupported separator' => ['90.123.45.67', ParseErrorType::INVALID_CHARACTERS],

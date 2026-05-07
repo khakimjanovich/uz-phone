@@ -48,6 +48,11 @@ final readonly class UzPhoneNumber implements Stringable, JsonSerializable
         }
 
         $national_number = $brick_phone_number->getNationalNumber();
+
+        if (strlen($national_number) !== 9) {
+            throw new ParseException(ParseErrorType::INVALID_LENGTH);
+        }
+
         $prefix = Prefix::tryFrom(substr($national_number, 0, 2));
 
         if ($prefix === null) {
