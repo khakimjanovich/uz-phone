@@ -55,7 +55,7 @@
         "analyse": "phpstan analyse",
         "format": "pint",
         "format:test": "pint --test",
-        "test": "pest"
+        "test": "pest --configuration phpunit.xml.dist --cache-directory .pest/cache"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
